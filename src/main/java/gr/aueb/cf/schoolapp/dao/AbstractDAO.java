@@ -4,6 +4,7 @@ import gr.aueb.cf.schoolapp.model.IdentifiableEntity;
 import gr.aueb.cf.schoolapp.service.util.JPAHelper;
 import jakarta.persistence.EntityManager;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,22 +33,32 @@ public abstract class AbstractDAO<T extends IdentifiableEntity> implements IGene
 
     @Override
     public Optional<T> update(T t) {
+        EntityManager em = getEntityManager();
+        Optional<T> toupdated = getById(t.getId());
+        if (toupdated.isPresent()) {
+            em.merge(t);
+            return Optional.of(t);
+        }
         return Optional.empty();
     }
 
     @Override
     public void delete(Object id) {
+        EntityManager em = getEntityManager();
+        Optional<T> toDelete = getById(id);
+        toDelete.ifPresent(em::remove);
 
     }
 
     @Override
     public Optional<T> getById(Object id) {
-        return Optional.empty();
+        EntityManager em = getEntityManager();
+        return Optional.ofNullable(em.find(persistenceClass, id));
     }
 
     @Override
     public List<T> getAll() {
-        return List.of();
+        return getByCriteria(getPersistenceClass(), Collections.emptyMap());
     }
 
     @Override
@@ -55,9 +66,9 @@ public abstract class AbstractDAO<T extends IdentifiableEntity> implements IGene
         return List.of();
     }
 
-    @Override
-    public <K extends T> List<K> getByCriteria(Map<String, Object> criteria, Class<K> clazz) {
-        return List.of();
+    @Override   // to do
+    public <K extends T> List<K> getByCriteria(Class<K> clazz, Map<String, Object> criteria) {
+        return null;
     }
 
 

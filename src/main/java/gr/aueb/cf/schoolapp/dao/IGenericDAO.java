@@ -13,7 +13,7 @@ public interface IGenericDAO<T> {
     Optional<T> getById(Object id);
     List<T> getAll();
     List<? extends T> getByCriteria(Map<String, Object> criteria);
-    <K extends  T> List<K> getByCriteria(Map<String, Object> criteria, Class<K> clazz);
+    <K extends T> List<K> getByCriteria(Class<K> clazz, Map<String, Object> criteria);
 
 }
 
