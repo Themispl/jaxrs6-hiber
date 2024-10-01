@@ -3,11 +3,10 @@ package gr.aueb.cf.schoolapp.dao;
 import gr.aueb.cf.schoolapp.model.IdentifiableEntity;
 import gr.aueb.cf.schoolapp.service.util.JPAHelper;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public abstract class AbstractDAO<T extends IdentifiableEntity> implements IGenericDAO<T> {
 
@@ -34,12 +33,14 @@ public abstract class AbstractDAO<T extends IdentifiableEntity> implements IGene
     @Override
     public Optional<T> update(T t) {
         EntityManager em = getEntityManager();
-        Optional<T> toupdated = getById(t.getId());
-        if (toupdated.isPresent()) {
-            em.merge(t);
-            return Optional.of(t);
-        }
-        return Optional.empty();
+        em.merge(t);
+        return Optional.of(t);
+//        Optional<T> toupdated = getById(t.getId());
+//        if (toupdated.isPresent()) {
+//            em.merge(t);
+//            return Optional.of(t);
+//        }
+//        return Optional.empty();
     }
 
     @Override
@@ -67,10 +68,54 @@ public abstract class AbstractDAO<T extends IdentifiableEntity> implements IGene
     }
 
     @Override   // to do
-    public <K extends T> List<K> getByCriteria(Class<K> clazz, Map<String, Object> criteria) {
-        return null;
+    public  List<T> getByCriteria(Class<T> clazz, Map<String, Object> criteria) {
+        EntityManager em = getEntityManager();
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<T> selectQuery = builder.createQuery(clazz);
+        Root<T> entityRoot = selectQuery.from(clazz);
+
+
+        List<Predicate> predicates = getPredicateList(builder, entityRoot, criteria);
+
+        selectQuery.select(entityRoot).where(predicates.toArray(new Predicate[0]));
+        TypedQuery<T> query = em.createQuery(selectQuery);
+        addParametersToQuery(query, criteria);
+        return query.getResultList();
+
+    }
+    protected List<Predicate> getPredicateList(CriteriaBuilder builder, Root<T> entityRoot, Map<String, Object> criteria) {
+        List<Predicate> predicates = new ArrayList<>();
+
+        for(Map.Entry<String, Object> entry : criteria.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            ParameterExpression<?> val = builder.parameter(value.getClass(), buildParamaterAlias(key));
+            Predicate predicateLike = builder.like((Expression<String>) resolePath(entityRoot, key), (Expression<String>) val);
+            predicates.add(predicateLike);
+        }
+        return predicates;
     }
 
+    protected Path<?> resolePath(Root<T> root, String expression) {
+        String[] fields = expression.split("\\.");
+        Path<?> path = root.get(fields[0]);
+        for (int i = 1; i < fields.length; i++) {
+            path = path.get(fields[i]);
+        }
+        return path;
+    }
+
+    protected void addParametersToQuery(TypedQuery<?> query, Map<String, Object> criteria) {
+        for (Map.Entry<String, Object> entry : criteria.entrySet()) {
+            Object value = entry.getValue();
+            query.setParameter(buildParamaterAlias(entry.getKey()),value);
+        }
+    }
+
+    protected String buildParamaterAlias(String alias) {
+        return alias.replaceAll("\\.","");
+    }
 
     public EntityManager getEntityManager() {
         return JPAHelper.getEntityManager();

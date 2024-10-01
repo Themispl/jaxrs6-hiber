@@ -17,6 +17,8 @@ public class Teacher extends AbstractEntity  implements IdentifiableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true)
+    private String vat;
 
     private String firstname;
     private String lastname;

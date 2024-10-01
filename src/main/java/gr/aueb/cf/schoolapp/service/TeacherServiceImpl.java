@@ -1,11 +1,12 @@
-package gr.aueb.cf.schoolapp.service.util;
+package gr.aueb.cf.schoolapp.service;
 
 import gr.aueb.cf.schoolapp.dao.ITeacherDAO;
 import gr.aueb.cf.schoolapp.dto.TeacherInsertDTO;
 import gr.aueb.cf.schoolapp.dto.TeacherReadOnlyDTO;
+import gr.aueb.cf.schoolapp.dto.TeacherUpdateDTO;
 import gr.aueb.cf.schoolapp.mapper.Mapper;
 import gr.aueb.cf.schoolapp.model.Teacher;
-import gr.aueb.cf.schoolapp.service.ITeacherService;
+import gr.aueb.cf.schoolapp.service.util.JPAHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
@@ -55,8 +56,29 @@ public class TeacherServiceImpl implements ITeacherService {
 
 
     @Override
-    public TeacherReadOnlyDTO updateTeacher(TeacherReadOnlyDTO updateddto) throws EntityNotFoundException {
-        return null;
+    public TeacherReadOnlyDTO updateTeacher(TeacherUpdateDTO updatedto) throws EntityNotFoundException {
+        try {
+            JPAHelper.beginTransaction();
+
+            Teacher teacher = Mapper.mapToTeacher(updatedto);
+
+            TeacherReadOnlyDTO readOnlyDTO = teacherDAO.update(teacher)
+                    .map(Mapper::mapToTeacherReadOnlyDTO)
+                    .orElseThrow(() -> new EntityNotFoundException("Teacher not inserted"));
+
+            JPAHelper.commitTransaction();
+
+            LOGGER.info("Teacher with id {}, lastname {}, firstname {} inserted",
+                    teacher.getId(), teacher.getLastname(), teacher.getFirstname());
+            return readOnlyDTO;
+        } catch (Exception e) {
+            JPAHelper.rollbackTransaction();
+            LOGGER.error("Error. Teacher not updated: firstname: {} , lastname {}",
+                    updatedto.getId(), updatedto.getFirstname(), updatedto.getFirstname());
+            throw e;
+        } finally {
+            JPAHelper.closeEntityManager();
+        }
     }
 
     @Override
