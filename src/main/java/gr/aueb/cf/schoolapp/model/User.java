@@ -1,8 +1,10 @@
 package gr.aueb.cf.schoolapp.model;
 
+import gr.aueb.cf.schoolapp.core.enums.RoleType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import javax.management.relation.Role;
 import java.security.Principal;
 
 @Entity
@@ -17,14 +19,20 @@ public class User extends AbstractEntity implements  IdentifiableEntity, Princip
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(unique = true)
     private String username;
     private String password;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private RoleType roleType;
 
 
 
     @Override
     public String getName() {
-        return "";
+
+        return username;
     }
 }
